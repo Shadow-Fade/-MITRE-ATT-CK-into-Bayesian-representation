@@ -1,0 +1,83 @@
+#<MITREJSONTOEXCEL.py.txt; accepts a MITRE ATT&CK Navigator .json file and outputs a csv file containing tactics and techniques>
+#Copyright (C) 2024  George Mason University
+#
+
+import fileinput
+
+filename = "layer.json"
+
+outputfile = "MITRE.csv"
+
+workingfile = open(outputfile, "w+")
+
+
+techpos = -1
+tacticpos = -1
+scorepos = -1
+enpos = -1
+technique = ""
+tactic = ""
+score = ""
+enabled = ""
+csvprint = ""
+
+for line in fileinput.input(files=filename):
+   if ((technique != "") & (tactic != "") & (score != "") & (enabled != "")):
+      tactic = tactic[0].upper() + tactic[1:]
+      tactic = tactic.replace("-"," ")
+      spacepos = tactic.find(" ")
+      if spacepos != -1:
+         tactic = tactic[:spacepos+1] + tactic[spacepos+1].upper() + tactic[spacepos+2:]
+      csvprint = tactic + "," + technique + "," + score + "," + str(enabled) + "\n"
+      workingfile.write(csvprint)
+
+      technique = ""
+      tactic = ""
+      score = ""
+      enabled = ""
+      csvprint = ""
+   elif ((enabled == "false") & (technique != "") & (tactic != "")):
+      tactic = tactic[0].upper() + tactic[1:]
+      tactic = tactic.replace("-"," ")
+      spacepos = tactic.find(" ")
+      if spacepos != -1:
+         tactic = tactic[:spacepos+1] + tactic[spacepos+1].upper() + tactic[spacepos+2:]
+      csvprint = tactic + "," + technique + "," + "NaN" + "," + str(enabled) + "\n"
+      workingfile.write(csvprint)
+
+      technique = ""
+      tactic = ""
+      score = ""
+      enabled = ""
+      csvprint = ""
+   else:
+      techpos = -1
+      tacticpos = -1 
+      scorepos = -1
+      enpos = -1
+      techpos =  line.find('"techniqueID":')
+      tacticpos = line.find('"tactic":')
+      scorepos = line.find('"score":')
+      enpos = line.find('"enabled":')
+        
+      if techpos != -1:
+         start = line.find('"', techpos+13)
+         end = line.find('"', start+1)
+         technique = line[start+1:end]
+
+      if tacticpos != -1:
+         start = line.find('"', tacticpos+8)
+         end = line.find('"', start+1)
+         tactic = line[start+1:end]
+
+      if scorepos != -1:
+         start = line.find(' ', scorepos+7)
+         end = line.find(',', start+1)
+         score = str(line[start+1:end])
+
+      if enpos != -1:
+         start = line.find(' ', enpos+9)
+         end = line.find(',', start+1)
+         enabled = line[start+1:end]
+
+workingfile.close()

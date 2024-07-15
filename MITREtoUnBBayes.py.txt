@@ -1,0 +1,234 @@
+#<MITREtoUnBBayes.py.txt; accepts a csv file containing MITRE ATT&CK tactics, techniques and mitigations and outputs a UnBBayes .net file>
+#Copyright (C) 2024  George Mason University
+#
+
+import csv
+
+datafile = "MITREcomb.csv"
+outputfile = "MITREUnB.net"
+
+dataopen = open(datafile, "r")
+dataread = csv.reader(dataopen)
+datalist = list(dataread)
+dataopen.close()
+
+tactics = []
+techniques = []
+mitigations = []
+
+
+for datarow in datalist:
+   if datarow[3] == "true":
+      dup = 0
+      for x in tactics:
+         if x == datarow[0]:
+            dup = 1
+      if dup == 0:
+         tactics.append(str(datarow[0]))
+      
+      techniques.append(str(datarow[1]))
+   
+      pos = 0
+      for position in datarow:
+         if pos > 3:
+            if datarow[pos] != "":
+               dup = 0
+               for x in mitigations:
+                  if x == datarow[pos]:
+                     dup = 1
+               if dup == 0:
+                  mitigations.append(str(datarow[pos]))
+         pos = pos + 1
+
+treelen = len(tactics) + len(techniques) + len(mitigations)
+
+tree = ""
+for x in range(treelen):
+   tree = tree + "C" + str(x+1) + ","
+   finalpos = x
+tree = tree + "C" + str(finalpos+2) + ","
+tree = tree[:len(tree)-1]
+tree = '     tree = "(' + tree + ')";' + "\n"
+
+header = 'net'+'\n'+'{'+'\n'+'     node_size = (0 0);'+'\n'+'     name = "MITREBN";'+'\n'+tree
+header = header + '     UnBBayes_Color_Probabilistic_Description = "-256";'+'\n'
+header = header + '     UnBBayes_Color_Probabilistic_Explanation = "-16711936";'+'\n'+'}'+'\n'+'\n'
+
+
+outputopen = open(outputfile, "w")
+
+outputopen.write(header)
+
+outputopen.close()
+
+nodes = ""
+
+treepos = 1
+xpos = 200
+ypos = 150
+for x in tactics:
+   y = x.replace(' ','-')
+   y = y.replace('/','-')
+   nodes = nodes + 'node TA_used_'+ y +'\n'+'{'+'\n'
+   nodes = nodes + '     label = "C'+str(treepos)+'";'+'\n'
+   treepos = treepos + 1
+   nodes = nodes + '     position = ('+str(xpos)+' '+str(ypos)+');'+'\n'
+   xpos = xpos + 100
+   nodes = nodes + '     states = ("Used" "Not Used");'+'\n'+'}'+'\n'+'\n'
+
+xpos = 200
+ypos = ypos + 100   
+techniquenum = 1
+for x in techniques:
+   y = x.replace(' ','-')
+   y = y.replace('/','-')
+   nodes = nodes + 'node TE_detected_'+ y +'_'+str(techniquenum)+'\n'+'{'+'\n'
+   techniquenum = techniquenum + 1
+   nodes = nodes + '     label = "C'+str(treepos)+'";'+'\n'
+   treepos = treepos + 1
+   nodes = nodes + '     position = ('+str(xpos)+' '+str(ypos)+');'+'\n'
+   xpos = xpos + 100
+   nodes = nodes + '     states = ("Detected" "Not Detected");'+'\n'+'}'+'\n'+'\n'
+
+xpos = 200
+ypos = ypos + 100   
+for x in mitigations:
+   y = x.replace(' ','-')
+   y = y.replace('/','-')
+   nodes = nodes + 'node MI_importance_'+ y +'\n'+'{'+'\n'
+   nodes = nodes + '     label = "C'+str(treepos)+'";'+'\n'
+   treepos = treepos + 1
+   nodes = nodes + '     position = ('+str(xpos)+' '+str(ypos)+');'+'\n'
+   xpos = xpos + 100
+   nodes = nodes + '     states = ("Important" "Not Important");'+'\n'+'}'+'\n'+'\n'
+
+xposn = 200
+yposn = 50
+nodes = nodes + 'node Overall_Tactic_Use'+'\n'+'{'+'\n'
+nodes = nodes + '     label = "C'+str(treepos)+'";'+'\n'
+treepos = treepos + 1
+nodes = nodes + '     position = ('+str(xposn)+' '+str(yposn)+');'+'\n'
+nodes = nodes + '     states = ("Used" "Not Used");'+'\n'+'}'+'\n'+'\n'
+
+
+outputopen = open(outputfile, "a")
+
+outputopen.write(nodes)
+
+outputopen.close()
+
+probability = ""
+
+for x in tactics:
+   y = x.replace(' ','-')
+   y = y.replace('/','-')
+   probability = probability + 'potential (TA_used_'+y+')'+'\n'+'{'+'\n'
+   probability = probability + ' data = ( 0.5 0.5 );'+'\n'+'}'+'\n'+'\n'
+
+
+outputopen = open(outputfile, "a")
+
+outputopen.write(probability)
+
+outputopen.close()
+
+
+probability = ""
+
+techniquenum = 1
+for datarow in datalist:
+   if datarow[3] == "true":
+      x = datarow[0]
+      y = datarow[1]
+      x = x.replace(' ','-')
+      y = y.replace(' ','-')
+      x = x.replace('/','-')
+      y = y.replace('/','-')
+      score = round(int(datarow[2])/100,2)
+      invscore = round((100 - int(datarow[2]))/100,2)
+
+      probability = probability + 'potential (TE_detected_'+y+'_'+str(techniquenum)+' | TA_used_'+x+')'+'\n'+'{'+'\n'
+      techniquenum = techniquenum + 1
+      probability = probability + ' data = (( '+str(score)+' '+str(invscore)+' )'+'\n' 
+      probability = probability + '( 0.0 1.0 ));'+'\n'+'}'+'\n'+'\n'
+
+
+outputopen = open(outputfile, "a")
+
+outputopen.write(probability)
+
+outputopen.close()
+
+
+probability = ""
+
+for x in mitigations:
+   numte = 0
+   y = x.replace(' ','-')
+   y = y.replace('/','-')
+   potential = 'potential (MI_importance_'+y+' | '
+   techniquenum = 1
+   for datarow in datalist:
+      if datarow[3] == "true":
+         pos = 0
+         for k in datarow:
+            if pos > 3:
+               if datarow[pos] != "":
+                  if datarow[pos] == x:
+                     y = datarow[1].replace(' ','-')
+                     y = y.replace('/','-')
+                     potential = potential + 'TE_detected_' + y + '_' + str(techniquenum) + ' '
+                     numte = numte + 1
+            pos = pos + 1             
+
+         techniquenum = techniquenum + 1
+
+   potential = potential[:len(potential)-1] + ')'
+   probability = probability+potential+'\n'+'{'+'\n'
+   probcage = '( 0.5 0.5 )'+'\n'
+   for j in range(numte):
+      if numte > 0:
+         probcage = '(' + probcage + probcage[:len(probcage)-1] + ')'+'\n'
+
+   probcage = ' data = ' + probcage[:len(probcage)-1] + ';'
+   lastcage = probcage.rfind('( 0.5 0.5 )')
+   probcage = probcage[:lastcage] + '( 0.0 1.0 )' + probcage[lastcage+11:]
+
+   probability = probability + probcage + '\n' + '}' + '\n' + '\n'
+
+
+outputopen = open(outputfile, "a")
+
+outputopen.write(probability)
+
+outputopen.close()
+
+
+probability = ""
+
+potential = 'potential (Overall_Tactic_Use'+' | '
+numta = 0
+for x in tactics:
+   y = x.replace(' ','-')
+   y = y.replace('/','-')
+   potential = potential + 'TA_used_' + y + ' '
+   numta = numta + 1
+potential = potential[:len(potential)-1] + ')'
+probability = probability+potential+'\n'+'{'+'\n'
+probcage = '( 0.5 0.5 )'+'\n'
+for j in range(numta):
+   if numta > 0:
+      probcage = '(' + probcage + probcage[:len(probcage)-1] + ')'+'\n'
+
+probcage = ' data = ' + probcage[:len(probcage)-1] + ';'
+lastcage = probcage.rfind('( 0.5 0.5 )')
+probcage = probcage[:lastcage] + '( 0.0 1.0 )' + probcage[lastcage+11:]
+
+probability = probability + probcage + '\n' + '}' + '\n' + '\n'
+
+
+outputopen = open(outputfile, "a")
+
+outputopen.write(probability)
+
+outputopen.close()

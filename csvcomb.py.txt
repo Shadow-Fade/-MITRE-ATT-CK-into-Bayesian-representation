@@ -1,0 +1,59 @@
+#<csvcomb.py.txt; accepts a csv file containing MITRE ATT&CK tactics and techniques and appends relevant mitigations>
+#Copyright (C) 2024  George Mason University
+#
+
+import csv
+
+datafile = "MITRE.csv"
+stixfile = "MITREstix.csv"
+outputfile = "MITREcomb.csv"
+
+dataopen = open(datafile, "r")
+dataread = csv.reader(dataopen)
+datalist = list(dataread)
+dataopen.close()
+
+stixopen = open(stixfile, "r")
+stixread = csv.reader(stixopen)
+stixlist = list(stixread)
+stixopen.close()
+
+datarowlen = len(datalist)
+stixrowlen = len(stixlist)
+
+dataline = 0
+for datarow in datalist:
+   tactic = datarow[0]
+   technique = datarow[1]
+   stixline = 0
+   for stixrow in stixlist:
+      tacticscan = stixrow[0]
+      techniquescan = stixrow[1]
+      if (tactic == tacticscan) & (technique == techniquescan):
+         for stixrowscan in stixrow:
+            if (stixrowscan != tacticscan) & (stixrowscan != techniquescan) & (stixrowscan != ''):
+               datalist[dataline].append(stixrowscan)
+
+      stixline = stixline + 1
+
+   dataline = dataline + 1
+
+outputopen = open(outputfile, "w")
+
+for datarow in datalist:
+   rowwrite = ""
+   for datarowscan in datarow:
+      rowwrite = rowwrite + str(datarowscan) + ","
+   rowwrite = rowwrite + "\n"
+   outputopen.write(rowwrite)
+
+outputopen.close()
+
+
+
+
+
+
+
+
+
