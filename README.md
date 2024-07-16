@@ -92,5 +92,3 @@ If you would like to contribute, please fork the repository and use a feature br
 License
 This project is licensed under the terms of the GPL License or BSD License.
 
-
-Authors: Farid Dehghanian, Hersh Singh, Moojtaba Haidary, Ghayth Hamed H Al Bakhat
