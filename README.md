@@ -90,5 +90,5 @@ Contributing
 If you would like to contribute, please fork the repository and use a feature branch. Pull requests are warmly welcome.
 
 License
-This project is licensed under the terms of the GPL License or BSD License.
+This project is licensed under the terms of the GPL License.
 
