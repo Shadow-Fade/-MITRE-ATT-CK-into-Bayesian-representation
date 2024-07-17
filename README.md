@@ -99,8 +99,10 @@ To generate a Bayesian Network from a MITRE ATT&CK graph:
    ```bash
      java -jar target/cyber-risk-modeling.jar input.json
 
+
 Contributing
 If you would like to contribute, please fork the repository and use a feature branch. Pull requests are warmly welcome.
+
 
 License
 This project is licensed under the terms of the GPL License.
